@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"unicode"
 )
@@ -9,18 +10,38 @@ import (
 type TokenType int
 
 const (
-	TokenError TokenType = iota
-	TokenEOF
-	TokenStartTag
-	TokenEndTag
-	TokenAttributeName
-	TokenAttributeValue
-	TokenText
+	Error TokenType = iota
+	EOF
+	StartTag
+	EndTag
+	AttributeName
+	AttributeValue
+	Text
 )
 
 type Token struct {
 	Type  TokenType
 	Value string
+}
+
+func (t Token) String() string {
+	switch t.Type {
+	case EOF:
+		return "EOF"
+	case Error:
+		return t.Value
+	case StartTag:
+		return fmt.Sprintf("start tag: \t%s", t.Value)
+	case EndTag:
+		return fmt.Sprintf("end tag: \t%s", t.Value)
+	case AttributeName:
+		return fmt.Sprintf("attr name: \t%s", t.Value)
+	case AttributeValue:
+		return fmt.Sprintf("attr val: \t%s", t.Value)
+	case Text:
+		return fmt.Sprintf("text: \t\t%s", t.Value)
+	}
+	return fmt.Sprintf("\t\t%q", t.Value)
 }
 
 type Lexer struct {
@@ -46,20 +67,20 @@ func (l *Lexer) Run() {
 func lexData(l *Lexer) stateFn {
 	err := l.skipWhitespace()
 	if errors.Is(err, io.EOF) {
-		l.emit(TokenEOF)
+		l.emit(EOF)
 		return nil
 	}
 	for {
 		r, err := l.readNext()
 		if err == io.EOF {
-			l.emit(TokenEOF)
+			l.emit(EOF)
 			return nil
 		}
 
 		switch r {
 		case '<':
 			if len(l.buffer) > 0 {
-				l.emitToken(TokenText, string(l.buffer))
+				l.emitToken(Text, string(l.buffer))
 				l.clearRuneBuffer()
 			}
 			return lexTagOpen
@@ -72,7 +93,7 @@ func lexData(l *Lexer) stateFn {
 func lexTagOpen(l *Lexer) stateFn {
 	r, err := l.readNext()
 	if err != nil {
-		l.emit(TokenError)
+		l.emit(Error)
 		return nil
 	}
 	switch r {
@@ -90,7 +111,7 @@ func lexTagName(l *Lexer) stateFn {
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			l.emit(TokenError)
+			l.emit(Error)
 			return nil
 		}
 
@@ -99,7 +120,7 @@ func lexTagName(l *Lexer) stateFn {
 		}
 
 		if unicode.IsSpace(r) || r == '>' || r == '/' {
-			l.emitToken(TokenStartTag, string(l.buffer))
+			l.emitToken(StartTag, string(l.buffer))
 			l.clearRuneBuffer()
 			switch r {
 			case '>':
@@ -118,12 +139,12 @@ func lexEndTag(l *Lexer) stateFn {
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			l.emit(TokenError)
+			l.emit(Error)
 			return nil
 		}
 
 		if r == '>' {
-			l.emitToken(TokenEndTag, string(l.buffer))
+			l.emitToken(EndTag, string(l.buffer))
 			l.clearRuneBuffer()
 			return lexData
 		}
@@ -137,7 +158,7 @@ func lexBeforeAttributeName(l *Lexer) stateFn {
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			l.emit(TokenError)
+			l.emit(Error)
 			return nil
 		}
 
@@ -148,7 +169,7 @@ func lexBeforeAttributeName(l *Lexer) stateFn {
 			l.bufferRune(r)
 			return lexAttributeName
 		default:
-			l.emit(TokenError)
+			l.emit(Error)
 			return nil
 		}
 	}
@@ -158,12 +179,12 @@ func lexAttributeName(l *Lexer) stateFn {
 	for {
 		r, err := l.readNext()
 		if err != nil {
-			l.emit(TokenError)
+			l.emit(Error)
 			return nil
 		}
 
 		if unicode.IsSpace(r) || r == '=' {
-			l.emitToken(TokenAttributeName, string(l.buffer))
+			l.emitToken(AttributeName, string(l.buffer))
 			l.clearRuneBuffer()
 			return lexAttributeValue
 		}
@@ -174,14 +195,14 @@ func lexAttributeName(l *Lexer) stateFn {
 func lexAttributeValue(l *Lexer) stateFn {
 	quoteChar, err := l.readNext()
 	if err != nil || (quoteChar != '"' && quoteChar != '\'') {
-		l.emit(TokenError)
+		l.emit(Error)
 		return nil
 	}
 
 	for {
 		r, err := l.readNext()
 		if err != nil || r == quoteChar {
-			l.emitToken(TokenAttributeValue, string(l.buffer))
+			l.emitToken(AttributeValue, string(l.buffer))
 			l.clearRuneBuffer()
 			return lexBeforeAttributeName
 		}

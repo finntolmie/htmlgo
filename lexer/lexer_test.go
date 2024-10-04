@@ -10,7 +10,7 @@ import (
 func TestLexEmpty(t *testing.T) {
 	input := strings.NewReader("")
 	output := []Token{
-		{Type: TokenEOF},
+		{Type: EOF},
 	}
 	l := NewLexer(input)
 	l.Run()
@@ -20,9 +20,9 @@ func TestLexEmpty(t *testing.T) {
 func TestLexDiv(t *testing.T) {
 	input := strings.NewReader("<div></div>")
 	output := []Token{
-		{Type: TokenStartTag, Value: "div"},
-		{Type: TokenEndTag, Value: "div"},
-		{Type: TokenEOF},
+		{Type: StartTag, Value: "div"},
+		{Type: EndTag, Value: "div"},
+		{Type: EOF},
 	}
 	l := NewLexer(input)
 	l.Run()
@@ -32,10 +32,10 @@ func TestLexDiv(t *testing.T) {
 func TestLexDivText(t *testing.T) {
 	input := strings.NewReader("<div>text</div>")
 	output := []Token{
-		{Type: TokenStartTag, Value: "div"},
-		{Type: TokenText, Value: "text"},
-		{Type: TokenEndTag, Value: "div"},
-		{Type: TokenEOF},
+		{Type: StartTag, Value: "div"},
+		{Type: Text, Value: "text"},
+		{Type: EndTag, Value: "div"},
+		{Type: EOF},
 	}
 	l := NewLexer(input)
 	l.Run()
@@ -45,19 +45,19 @@ func TestLexDivText(t *testing.T) {
 func TestNestedElements(t *testing.T) {
 	input := strings.NewReader("<div><a><div><a class=\"hi\"></a><b></b></div></a></div>")
 	output := []Token{
-		{Type: TokenStartTag, Value: "div"},
-		{Type: TokenStartTag, Value: "a"},
-		{Type: TokenStartTag, Value: "div"},
-		{Type: TokenStartTag, Value: "a"},
-		{Type: TokenAttributeName, Value: "class"},
-		{Type: TokenAttributeValue, Value: "hi"},
-		{Type: TokenEndTag, Value: "a"},
-		{Type: TokenStartTag, Value: "b"},
-		{Type: TokenEndTag, Value: "b"},
-		{Type: TokenEndTag, Value: "div"},
-		{Type: TokenEndTag, Value: "a"},
-		{Type: TokenEndTag, Value: "div"},
-		{Type: TokenEOF},
+		{Type: StartTag, Value: "div"},
+		{Type: StartTag, Value: "a"},
+		{Type: StartTag, Value: "div"},
+		{Type: StartTag, Value: "a"},
+		{Type: AttributeName, Value: "class"},
+		{Type: AttributeValue, Value: "hi"},
+		{Type: EndTag, Value: "a"},
+		{Type: StartTag, Value: "b"},
+		{Type: EndTag, Value: "b"},
+		{Type: EndTag, Value: "div"},
+		{Type: EndTag, Value: "a"},
+		{Type: EndTag, Value: "div"},
+		{Type: EOF},
 	}
 	l := NewLexer(input)
 	l.Run()
@@ -67,11 +67,11 @@ func TestNestedElements(t *testing.T) {
 func TestLexDivId(t *testing.T) {
 	input := strings.NewReader("<div id=\"main\"></div>")
 	output := []Token{
-		{Type: TokenStartTag, Value: "div"},
-		{Type: TokenAttributeName, Value: "id"},
-		{Type: TokenAttributeValue, Value: "main"},
-		{Type: TokenEndTag, Value: "div"},
-		{Type: TokenEOF},
+		{Type: StartTag, Value: "div"},
+		{Type: AttributeName, Value: "id"},
+		{Type: AttributeValue, Value: "main"},
+		{Type: EndTag, Value: "div"},
+		{Type: EOF},
 	}
 	l := NewLexer(input)
 	l.Run()
@@ -81,13 +81,13 @@ func TestLexDivId(t *testing.T) {
 func TestLexDivMultipleAttributes(t *testing.T) {
 	input := strings.NewReader("<div id=\"main\" class=\"huge\"></div>")
 	output := []Token{
-		{Type: TokenStartTag, Value: "div"},
-		{Type: TokenAttributeName, Value: "id"},
-		{Type: TokenAttributeValue, Value: "main"},
-		{Type: TokenAttributeName, Value: "class"},
-		{Type: TokenAttributeValue, Value: "huge"},
-		{Type: TokenEndTag, Value: "div"},
-		{Type: TokenEOF},
+		{Type: StartTag, Value: "div"},
+		{Type: AttributeName, Value: "id"},
+		{Type: AttributeValue, Value: "main"},
+		{Type: AttributeName, Value: "class"},
+		{Type: AttributeValue, Value: "huge"},
+		{Type: EndTag, Value: "div"},
+		{Type: EOF},
 	}
 	l := NewLexer(input)
 	l.Run()
@@ -100,13 +100,13 @@ func TestLexDivMultiline(t *testing.T) {
 	</div>
 	`)
 	output := []Token{
-		{Type: TokenStartTag, Value: "div"},
-		{Type: TokenStartTag, Value: "a"},
-		{Type: TokenAttributeName, Value: "class"},
-		{Type: TokenAttributeValue, Value: "big"},
-		{Type: TokenEndTag, Value: "a"},
-		{Type: TokenEndTag, Value: "div"},
-		{Type: TokenEOF},
+		{Type: StartTag, Value: "div"},
+		{Type: StartTag, Value: "a"},
+		{Type: AttributeName, Value: "class"},
+		{Type: AttributeValue, Value: "big"},
+		{Type: EndTag, Value: "a"},
+		{Type: EndTag, Value: "div"},
+		{Type: EOF},
 	}
 	l := NewLexer(input)
 	l.Run()
@@ -123,35 +123,35 @@ func TestLexRun(t *testing.T) {
     </body>
 </html>`)
 	output := []Token{
-		{Type: TokenStartTag, Value: "html"},
-		{Type: TokenStartTag, Value: "body"},
+		{Type: StartTag, Value: "html"},
+		{Type: StartTag, Value: "body"},
 
-		{Type: TokenStartTag, Value: "h1"},
-		{Type: TokenText, Value: "Title"},
-		{Type: TokenEndTag, Value: "h1"},
+		{Type: StartTag, Value: "h1"},
+		{Type: Text, Value: "Title"},
+		{Type: EndTag, Value: "h1"},
 
-		{Type: TokenStartTag, Value: "div"},
+		{Type: StartTag, Value: "div"},
 
-		{Type: TokenAttributeName, Value: "id"},
-		{Type: TokenAttributeValue, Value: "main"},
+		{Type: AttributeName, Value: "id"},
+		{Type: AttributeValue, Value: "main"},
 
-		{Type: TokenAttributeName, Value: "class"},
-		{Type: TokenAttributeValue, Value: "test"},
+		{Type: AttributeName, Value: "class"},
+		{Type: AttributeValue, Value: "test"},
 
-		{Type: TokenStartTag, Value: "p"},
-		{Type: TokenText, Value: "Hello "},
-		{Type: TokenStartTag, Value: "em"},
-		{Type: TokenText, Value: "world"},
-		{Type: TokenEndTag, Value: "em"},
-		{Type: TokenText, Value: "!"},
-		{Type: TokenEndTag, Value: "p"},
+		{Type: StartTag, Value: "p"},
+		{Type: Text, Value: "Hello "},
+		{Type: StartTag, Value: "em"},
+		{Type: Text, Value: "world"},
+		{Type: EndTag, Value: "em"},
+		{Type: Text, Value: "!"},
+		{Type: EndTag, Value: "p"},
 
-		{Type: TokenEndTag, Value: "div"},
+		{Type: EndTag, Value: "div"},
 
-		{Type: TokenEndTag, Value: "body"},
-		{Type: TokenEndTag, Value: "html"},
+		{Type: EndTag, Value: "body"},
+		{Type: EndTag, Value: "html"},
 
-		{Type: TokenEOF},
+		{Type: EOF},
 	}
 	l := NewLexer(input)
 	l.Run()
