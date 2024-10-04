@@ -11,13 +11,10 @@ type TokenType int
 const (
 	TokenError TokenType = iota
 	TokenEOF
-	TokenDoctype
 	TokenStartTag
 	TokenEndTag
-	TokenSelfClosingTag
 	TokenAttributeName
 	TokenAttributeValue
-	TokenComment
 	TokenText
 )
 
@@ -61,6 +58,10 @@ func lexData(l *Lexer) stateFn {
 
 		switch r {
 		case '<':
+			if len(l.buffer) > 0 {
+				l.emitToken(TokenText, string(l.buffer))
+				l.clearRuneBuffer()
+			}
 			return lexTagOpen
 		default:
 			l.bufferRune(r)
@@ -76,6 +77,7 @@ func lexTagOpen(l *Lexer) stateFn {
 	}
 	switch r {
 	case '/':
+		l.clearRuneBuffer()
 		return lexEndTag
 	default:
 		l.clearRuneBuffer()
@@ -105,8 +107,7 @@ func lexTagName(l *Lexer) stateFn {
 			case '/':
 				return nil
 			default:
-				l.skipWhitespace()
-				return lexAttributeName
+				return lexBeforeAttributeName
 			}
 		}
 		l.bufferRune(r)
@@ -114,7 +115,6 @@ func lexTagName(l *Lexer) stateFn {
 }
 
 func lexEndTag(l *Lexer) stateFn {
-	var tagName []rune
 	for {
 		r, err := l.readNext()
 		if err != nil {
@@ -123,11 +123,34 @@ func lexEndTag(l *Lexer) stateFn {
 		}
 
 		if r == '>' {
-			l.emitToken(TokenEndTag, string(tagName))
+			l.emitToken(TokenEndTag, string(l.buffer))
+			l.clearRuneBuffer()
 			return lexData
 		}
 
-		tagName = append(tagName, r)
+		l.bufferRune(r)
+	}
+}
+
+func lexBeforeAttributeName(l *Lexer) stateFn {
+	l.skipWhitespace()
+	for {
+		r, err := l.readNext()
+		if err != nil {
+			l.emit(TokenError)
+			return nil
+		}
+
+		switch {
+		case r == '>':
+			return lexData
+		case unicode.IsLetter(r):
+			l.bufferRune(r)
+			return lexAttributeName
+		default:
+			l.emit(TokenError)
+			return nil
+		}
 	}
 }
 
@@ -160,7 +183,7 @@ func lexAttributeValue(l *Lexer) stateFn {
 		if err != nil || r == quoteChar {
 			l.emitToken(TokenAttributeValue, string(l.buffer))
 			l.clearRuneBuffer()
-			return lexData
+			return lexBeforeAttributeName
 		}
 		l.bufferRune(r)
 	}
