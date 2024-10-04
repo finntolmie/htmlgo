@@ -47,21 +47,28 @@ func (t Token) String() string {
 type Lexer struct {
 	input  io.RuneScanner
 	buffer []rune
-	Tokens []Token
+	Tokens chan Token
 }
 
 type stateFn func(*Lexer) stateFn
 
 func NewLexer(r io.RuneScanner) *Lexer {
 	return &Lexer{
-		input: r,
+		input:  r,
+		Tokens: make(chan Token),
 	}
 }
 
-func (l *Lexer) Run() {
+func (l *Lexer) Lex() chan Token {
+	go l.run()
+	return l.Tokens
+}
+
+func (l *Lexer) run() {
 	for state := lexData; state != nil; {
 		state = state(l)
 	}
+	close(l.Tokens)
 }
 
 func lexData(l *Lexer) stateFn {
@@ -211,11 +218,11 @@ func lexAttributeValue(l *Lexer) stateFn {
 }
 
 func (l *Lexer) emit(t TokenType) {
-	l.Tokens = append(l.Tokens, Token{Type: t})
+	l.Tokens <- Token{Type: t}
 }
 
 func (l *Lexer) emitToken(t TokenType, value string) {
-	l.Tokens = append(l.Tokens, Token{Type: t, Value: value})
+	l.Tokens <- Token{Type: t, Value: value}
 }
 
 func (l *Lexer) bufferRune(r rune) {

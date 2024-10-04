@@ -13,8 +13,8 @@ func TestLexEmpty(t *testing.T) {
 		{Type: EOF},
 	}
 	l := NewLexer(input)
-	l.Run()
-	assert.Equal(t, output, l.Tokens)
+	tokens := collect(l.Lex())
+	assert.Equal(t, output, tokens)
 }
 
 func TestLexDiv(t *testing.T) {
@@ -25,8 +25,8 @@ func TestLexDiv(t *testing.T) {
 		{Type: EOF},
 	}
 	l := NewLexer(input)
-	l.Run()
-	assert.Equal(t, output, l.Tokens)
+	tokens := collect(l.Lex())
+	assert.Equal(t, output, tokens)
 }
 
 func TestLexDivText(t *testing.T) {
@@ -38,8 +38,8 @@ func TestLexDivText(t *testing.T) {
 		{Type: EOF},
 	}
 	l := NewLexer(input)
-	l.Run()
-	assert.Equal(t, output, l.Tokens)
+	tokens := collect(l.Lex())
+	assert.Equal(t, output, tokens)
 }
 
 func TestNestedElements(t *testing.T) {
@@ -60,8 +60,8 @@ func TestNestedElements(t *testing.T) {
 		{Type: EOF},
 	}
 	l := NewLexer(input)
-	l.Run()
-	assert.Equal(t, output, l.Tokens)
+	tokens := collect(l.Lex())
+	assert.Equal(t, output, tokens)
 }
 
 func TestLexDivId(t *testing.T) {
@@ -74,8 +74,8 @@ func TestLexDivId(t *testing.T) {
 		{Type: EOF},
 	}
 	l := NewLexer(input)
-	l.Run()
-	assert.Equal(t, output, l.Tokens)
+	tokens := collect(l.Lex())
+	assert.Equal(t, output, tokens)
 }
 
 func TestLexDivMultipleAttributes(t *testing.T) {
@@ -90,8 +90,8 @@ func TestLexDivMultipleAttributes(t *testing.T) {
 		{Type: EOF},
 	}
 	l := NewLexer(input)
-	l.Run()
-	assert.Equal(t, output, l.Tokens)
+	tokens := collect(l.Lex())
+	assert.Equal(t, output, tokens)
 }
 
 func TestLexDivMultiline(t *testing.T) {
@@ -109,8 +109,8 @@ func TestLexDivMultiline(t *testing.T) {
 		{Type: EOF},
 	}
 	l := NewLexer(input)
-	l.Run()
-	assert.Equal(t, output, l.Tokens)
+	tokens := collect(l.Lex())
+	assert.Equal(t, output, tokens)
 }
 
 func TestLexRun(t *testing.T) {
@@ -154,6 +154,14 @@ func TestLexRun(t *testing.T) {
 		{Type: EOF},
 	}
 	l := NewLexer(input)
-	l.Run()
-	assert.Equal(t, output, l.Tokens)
+	tokens := collect(l.Lex())
+	assert.Equal(t, output, tokens)
+}
+
+func collect(tokenCh chan Token) []Token {
+	tokens := make([]Token, 0)
+	for token := range tokenCh {
+		tokens = append(tokens, token)
+	}
+	return tokens
 }
